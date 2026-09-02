@@ -1,42 +1,75 @@
 import os
+import json
 import streamlit as st
-from PIL import Image
 
 st.set_page_config(page_title="Product Store", layout="wide")
 
 st.title("🛍️ Product Showcase")
 
+# --- SET YOUR ADMIN PASSWORD HERE ---
+ADMIN_PASSWORD = "mysecretpassword123"
+
+DATA_FILE = "products.json"
 UPLOAD_DIR = "uploaded_photos"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Product Upload Form
-with st.expander("➕ Add New Product"):
-    title = st.text_input("Product Title")
-    price = st.text_input("Price (e.g. $25)")
-    uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg", "webp"])
+def load_products():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_products(products):
+    with open(DATA_FILE, "w") as f:
+        json.dump(products, f, indent=2)
+
+products = load_products()
+
+# --- SIDEBAR: ADMIN LOGIN & UPLOAD FORM ---
+st.sidebar.title("🔐 Admin Panel")
+input_password = st.sidebar.text_input("Enter Admin Password", type="password")
+
+if input_password == ADMIN_PASSWORD:
+    st.sidebar.success("Logged in as Admin")
+    st.sidebar.subheader("➕ Add New Product")
     
-    if st.button("Save Product"):
-        if uploaded_file and title:
-            # Save file using product title
-            ext = uploaded_file.name.split(".")[-1]
-            filename = f"{title} - {price}.{ext}" if price else uploaded_file.name
-            file_path = os.path.join(UPLOAD_DIR, filename)
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            st.success(f"Added '{title}' to gallery!")
-            st.rerun()
+    with st.sidebar.form("upload_form", clear_on_submit=True):
+        title = st.text_input("Product Name")
+        price = st.text_input("Price (e.g., $25)")
+        uploaded_file = st.file_uploader("Choose Photo", type=["jpg", "png", "jpeg", "webp"])
+        submit_button = st.form_submit_button("Publish Product")
 
-# Display Gallery
-st.subheader("📦 Available Products")
-saved_images = [f for f in os.listdir(UPLOAD_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+        if submit_button:
+            if title and price and uploaded_file:
+                file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
 
-if saved_images:
+                products.append({
+                    "title": title,
+                    "price": price,
+                    "image": file_path
+                })
+                save_products(products)
+
+                st.sidebar.success(f"Published '{title}'!")
+                st.rerun()
+            else:
+                st.sidebar.warning("Please fill in all fields.")
+
+elif input_password != "":
+    st.sidebar.error("Incorrect password!")
+
+# --- PUBLIC GALLERY (VISIBLE TO EVERYONE) ---
+st.subheader("📦 Products")
+if products:
     cols = st.columns(3)
-    for idx, img_name in enumerate(saved_images):
-        img_path = os.path.join(UPLOAD_DIR, img_name)
+    for idx, item in enumerate(products):
         with cols[idx % 3]:
-            st.image(img_path, use_container_width=True)
-            # Display name and price parsed from filename
-            details = img_name.rsplit(".", 1)[0]
-            st.markdown(f"### {details}")
-            st.link_button("Buy / Contact via WhatsApp", "https://wa.me/YOUR_PHONE_NUMBER")
+            if os.path.exists(item["image"]):
+                st.image(item["image"], use_container_width=True)
+                st.markdown(f"### {item['title']}")
+                st.markdown(f"**Price:** {item['price']}")
+                st.link_button("Buy / Contact Seller", "https://wa.me/YOUR_PHONE_NUMBER")
+else:
+    st.info("No products listed yet.")
