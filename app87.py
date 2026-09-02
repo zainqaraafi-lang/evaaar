@@ -62,22 +62,39 @@ if input_password == ADMIN_PASSWORD:
 
     st.sidebar.divider()
 
-    # 2. DELETE PRODUCT SECTION
+    # 2. EDIT PRICE SECTION
+    st.sidebar.subheader("✏️ Update Product Price")
+    if products:
+        product_names = [p["title"] for p in products]
+        selected_title_to_edit = st.sidebar.selectbox("Select product to edit:", product_names, key="edit_select")
+        
+        current_item = next((p for p in products if p["title"] == selected_title_to_edit), None)
+        
+        if current_item:
+            new_price = st.sidebar.text_input("New Price:", value=current_item["price"], key="edit_price_input")
+            if st.sidebar.button("Update Price"):
+                current_item["price"] = new_price
+                save_products(products)
+                st.sidebar.success(f"Price updated for '{selected_title_to_edit}'!")
+                st.rerun()
+    else:
+        st.sidebar.info("No products available to edit.")
+
+    st.sidebar.divider()
+
+    # 3. DELETE PRODUCT SECTION
     st.sidebar.subheader("🗑️ Delete Product")
     if products:
         product_names = [p["title"] for p in products]
-        selected_title = st.sidebar.selectbox("Select product to remove:", product_names)
+        selected_title = st.sidebar.selectbox("Select product to remove:", product_names, key="delete_select")
         
         if st.sidebar.button("Delete Product", type="primary"):
-            # Find item to delete
             item_to_delete = next((p for p in products if p["title"] == selected_title), None)
             
             if item_to_delete:
-                # Delete image file from folder if it exists
                 if os.path.exists(item_to_delete["image"]):
                     os.remove(item_to_delete["image"])
                 
-                # Remove product from list and save
                 products = [p for p in products if p["title"] != selected_title]
                 save_products(products)
                 
