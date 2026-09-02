@@ -3,9 +3,10 @@ import json
 import urllib.parse
 import streamlit as st
 
-st.set_page_config(page_title="Product Store", layout="wide")
 
-st.title("🛍️ Product Showcase")
+st.set_page_config(page_title="Evaa Store", layout="wide")
+
+st.title("🛍️ Evaa Store")
 
 # --- CONFIGURATION SETTINGS ---
 # Set your custom admin password here
