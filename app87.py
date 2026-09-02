@@ -3,18 +3,13 @@ import json
 import urllib.parse
 import streamlit as st
 
-
 st.set_page_config(page_title="Evaa Store", layout="wide")
 
 st.title("🛍️ Evaa Store")
 
 # --- CONFIGURATION SETTINGS ---
-# Set your custom admin password here
 ADMIN_PASSWORD = "mysecretpassword123"
-
-# Set your WhatsApp number here (Country code + phone number, no plus, no spaces)
-# Example: "967712345678"
-WHATSAPP_NUMBER = "+967777322267"
+WHATSAPP_NUMBER = "YOUR_PHONE_NUMBER_HERE"
 
 DATA_FILE = "products.json"
 UPLOAD_DIR = "uploaded_photos"
@@ -32,14 +27,15 @@ def save_products(products):
 
 products = load_products()
 
-# --- SIDEBAR: ADMIN LOGIN & UPLOAD FORM ---
+# --- SIDEBAR: ADMIN PANEL ---
 st.sidebar.title("🔐 Admin Panel")
 input_password = st.sidebar.text_input("Enter Admin Password", type="password")
 
 if input_password == ADMIN_PASSWORD:
     st.sidebar.success("Logged in as Admin")
-    st.sidebar.subheader("➕ Add New Product")
     
+    # 1. ADD PRODUCT SECTION
+    st.sidebar.subheader("➕ Add New Product")
     with st.sidebar.form("upload_form", clear_on_submit=True):
         title = st.text_input("Product Name")
         price = st.text_input("Price (e.g., $25)")
@@ -64,10 +60,36 @@ if input_password == ADMIN_PASSWORD:
             else:
                 st.sidebar.warning("Please fill in all fields.")
 
+    st.sidebar.divider()
+
+    # 2. DELETE PRODUCT SECTION
+    st.sidebar.subheader("🗑️ Delete Product")
+    if products:
+        product_names = [p["title"] for p in products]
+        selected_title = st.sidebar.selectbox("Select product to remove:", product_names)
+        
+        if st.sidebar.button("Delete Product", type="primary"):
+            # Find item to delete
+            item_to_delete = next((p for p in products if p["title"] == selected_title), None)
+            
+            if item_to_delete:
+                # Delete image file from folder if it exists
+                if os.path.exists(item_to_delete["image"]):
+                    os.remove(item_to_delete["image"])
+                
+                # Remove product from list and save
+                products = [p for p in products if p["title"] != selected_title]
+                save_products(products)
+                
+                st.sidebar.success(f"Deleted '{selected_title}'!")
+                st.rerun()
+    else:
+        st.sidebar.info("No products available to delete.")
+
 elif input_password != "":
     st.sidebar.error("Incorrect password!")
 
-# --- PUBLIC GALLERY (VISIBLE TO EVERYONE) ---
+# --- PUBLIC GALLERY ---
 st.subheader("📦 Products")
 if products:
     cols = st.columns(3)
@@ -78,7 +100,6 @@ if products:
                 st.markdown(f"### {item['title']}")
                 st.markdown(f"**Price:** {item['price']}")
                 
-                # Direct WhatsApp redirect with pre-filled message
                 message = f"Hello! I am interested in buying '{item['title']}' for {item['price']}."
                 encoded_message = urllib.parse.quote(message)
                 whatsapp_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={encoded_message}"
