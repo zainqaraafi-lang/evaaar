@@ -8,7 +8,7 @@ st.set_page_config(page_title="Evaa Store", layout="wide")
 st.title("🛍️ Evaa Store")
 
 # --- CONFIGURATION SETTINGS ---
-ADMIN_PASSWORD = "mysecretpassword123"
+ADMIN_PASSWORD = "123"
 WHATSAPP_NUMBER = "YOUR_PHONE_NUMBER_HERE"
 
 DATA_FILE = "products.json"
